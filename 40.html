@@ -1,0 +1,535 @@
+.<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>النظام الإداري المتكامل | مدرسة الشيخ جاعد</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --admin-dark: #0f172a;
+            --admin-blue: #1e40af;
+            --admin-gray: #f8fafc;
+            --border-color: #cbd5e1;
+            --text-main: #334155;
+            --success-green: #15803d;
+            --danger-red: #b91c1c;
+            --whatsapp-color: #25d366;
+            --bus-gold: #f59e0b;
+            --credit-bg: #111827;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Cairo', sans-serif; background-color: #e2e8f0; color: var(--text-main); padding: 15px; }
+
+        .admin-header {
+            background: var(--admin-dark); color: white; padding: 15px 30px;
+            border-radius: 12px; display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 10px; border-bottom: 4px solid var(--admin-blue);
+        }
+
+        /* شريط الحقوق مع زر التفعيل */
+        .credit-container {
+            display: flex;
+            align-items: center;
+            background: var(--credit-bg);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .activation-key {
+            background: var(--bus-gold);
+            color: var(--admin-dark);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .activation-key:hover { background: #fff; }
+
+        .credit-marquee {
+            flex: 1;
+            color: var(--bus-gold);
+            padding: 10px 0;
+            font-weight: 700;
+            font-size: 0.9rem;
+            overflow: hidden;
+            white-space: nowrap;
+            direction: ltr;
+        }
+
+        .marquee-content {
+            display: inline-block;
+            animation: marquee-rtl 25s linear infinite;
+            padding-right: 50px;
+        }
+
+        @keyframes marquee-rtl {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100%); }
+        }
+
+        /* إخفاء النظام حتى التفعيل */
+        #mainContent { display: none; }
+
+        .top-duty-bar {
+            background: white; border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 15px; margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .duty-grid { 
+            display: flex; flex-wrap: nowrap; gap: 12px; 
+            overflow-x: auto; justify-content: center; padding-bottom: 5px;
+        }
+        .duty-card {
+            min-width: 180px; background: var(--admin-gray); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 10px 15px; cursor: pointer; transition: 0.3s;
+            text-align: center; flex-shrink: 0;
+        }
+        .duty-card.active { border: 2px solid var(--admin-blue); background: #eff6ff; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2); }
+
+        .dashboard-container {
+            display: grid; grid-template-columns: 320px 1fr 320px; gap: 20px;
+            max-width: 1600px; margin: 0 auto;
+        }
+
+        .content-panel {
+            background: white; border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); height: fit-content;
+        }
+
+        .panel-title {
+            font-size: 0.95rem; font-weight: 700; color: var(--admin-dark);
+            margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--admin-gray);
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .form-section { background: var(--admin-gray); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border-color); }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; margin-bottom: 10px; }
+        
+        .bus-info-box { background: #fffbeb; padding: 15px; border-radius: 10px; border: 1px solid #fef3c7; text-align: center; margin-top: 10px; }
+        .driver-name-display { color: #b45309; font-size: 1.1rem; font-weight: 700; margin: 5px 0; }
+
+        .btn { width: 100%; padding: 11px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; text-decoration: none; }
+        .btn-primary { background: var(--admin-blue); color: white; }
+        .btn-secondary { background: var(--danger-red); color: white; }
+        .btn-success { background: var(--whatsapp-color); color: white; }
+
+        /* تعديلات المودال (النافذة) */
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
+        .modal-content { background: white; margin: 10% auto; padding: 25px; border-radius: 15px; width: 350px; text-align: center; border: 4px solid var(--admin-blue); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .sig-container { border: 2px dashed #cbd5e1; border-radius: 10px; margin: 15px 0; background: #fff; }
+        canvas { width: 100%; height: 200px; cursor: crosshair; touch-action: none; }
+        #toast { position: fixed; bottom: 20px; right: 20px; background: var(--admin-dark); color: white; padding: 12px 25px; border-radius: 8px; display: none; z-index: 9999; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
+        }
+    </style>
+</head>
+<body onload="initDashboard()">
+
+    <div id="toast"></div>
+
+    <div id="codeModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color:var(--admin-blue); margin-bottom:15px;"><i class="fa-solid fa-code"></i> فك شفرة النظام</h3>
+            <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">أدخل رمز الوصول الآمن</p>
+            <input type="password" id="secretCodeInput" placeholder="••••" style="text-align: center; font-size: 2rem; letter-spacing: 8px; border: 2px solid var(--admin-blue);">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-primary" onclick="verifySecretCode()">دخول</button>
+                <button class="btn" style="background:#ccc;" onclick="closeCodeModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="signatureModal" class="modal">
+        <div class="modal-content" style="width: 450px;">
+            <h3 style="color:var(--admin-blue);"><i class="fa-solid fa-stamp"></i> بوابـة اعتماد المدير</h3>
+            <p id="approveInfo" style="font-size: 0.85rem; margin: 10px 0; color: #64748b;"></p>
+            <div class="sig-container">
+                <canvas id="signature-pad"></canvas>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="confirmSignature()">اعتماد وطباعة <i class="fa-solid fa-print"></i></button>
+                <button class="btn" style="background:#ccc;" onclick="closeSignature()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="printArea" style="display:none; direction: rtl; padding: 50px;">
+        <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 20px; margin-bottom: 30px;">
+            <h2 style="margin:0;">سلطنة عمان</h2>
+            <h2 style="margin:0;">مدرسة الشيخ جاعد بن خميس الخروصي</h2>
+            <div style="color: #15803d; border: 4px solid #15803d; display: inline-block; padding: 5px 30px; margin: 20px 0; font-weight: 900; font-size: 1.8rem;">مـعـتـمـد رمسياً</div>
+        </div>
+        <div id="printBody" style="font-size: 1.4rem; line-height: 2.2;"></div>
+        <div style="margin-top: 80px; float: left; text-align: center; width: 250px;">
+            <p style="font-weight: bold;">يعتمد/ مدير المدرسة</p>
+            <img id="sigImg" style="width: 200px; margin-top: 10px; border-bottom: 1px solid #000;">
+            <p id="printDate" style="font-size: 0.9rem; margin-top: 10px;"></p>
+        </div>
+    </div>
+
+    <header class="admin-header">
+        <div>
+            <h1>مدرسة الشيخ جاعد بن خميس الخروصي</h1>
+            <p style="font-size: 0.8rem; opacity: 0.9;">نظام الإدارة الرقمي المتكامل - إصدار 2026</p>
+        </div>
+        <div id="liveClock" style="font-family: monospace; font-size: 1.2rem; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 8px;">00:00:00</div>
+    </header>
+
+    <div class="credit-container">
+        <div class="activation-key" onclick="activateSystem()">
+            <i class="fa-solid fa-code"></i> فك شفرة النظام
+        </div>
+        <div class="credit-marquee" dir="rtl">
+            <div class="marquee-content">
+                مرحبا بكــــــــم: <strong></strong> - مدرسة الشيخ جاعد بن خميس الخروصي <i class="fa-solid fa-star"></i>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainContent">
+        <div class="top-duty-bar">
+            <div id="dutyGrid" class="duty-grid"></div>
+        </div>
+
+        <div class="dashboard-container">
+            <aside>
+                <div class="content-panel">
+                    <div class="panel-title" style="border-bottom-color: var(--bus-gold);"><i class="fa-solid fa-bus"></i> نظام النقلات المدرسية</div>
+                    <label>اختر النقلة والمنطقة:</label>
+                    <select id="transportSelect" onchange="updateDriverInfo()">
+                        <option value="">-- اختر المنطقة --</option>
+                        <optgroup label="🚌 النقلة الأولى (الصباحية)">
+                            <option value="خليفة بن شوين الحبسي">حي الامجاد - المنطقة الأولى شارع الإصلاح</option>
+                            <option value="عامر بن سويلم الخاطري">المهاليل - فلج بني خزير</option>
+                            <option value="ثاني سالم علي الهطالي">حي الامجاد (1)</option>
+                            <option value="احمد بن سعيد الهطالي">وادي حصت</option>
+                            <option value="ناصر محمد خميس الخروصي">حي الامجاد (2)</option>
+                            <option value="خلفان عامر خلفان الحراصي">الصبيخة - مرتفعات الصبيخة</option>
+                            <option value="مرهون حارب حميد الهطالي">حي الامجاد (3)</option>
+                            <option value="صقر سلطان سعيد الخاطري">حي الامجاد (4)</option>
+                            <option value="عبدالعزيز مرهون حارب الهطالي">حي الامجاد (5)</option>
+                            <option value="سلمان بن سعيد العوفي">الرامي</option>
+                            <option value="حمزة عبدالله عامر الهطالي">السهل</option>
+                            <option value="سعيد سلطان سعيد الخاطري">حي الامجاد (6)</option>
+                            <option value="سعيد خميس طالب الغلابي">حي الامجاد - محطة الماء</option>
+                            <option value="احمد بن هلال بن زاهر الخروصي">السوق - المال</option>
+                            <option value="محمد بن حمود بن غالب الريامي">الحويجر - وادي صفون</option>
+                            <option value="سالم بن محمد سعيد البحري">المحدوث- الغرب</option>
+                            <option value="محمد بن حمد بن خلفان بن غضيب الهطالي">الالرامي الجديدة - الظاهر</option>
+                            <option value="خليفه الهطالي">الشعبية الغربية</option>
+                            <option value="خميس سعيد مرير الهطالي">المحدوث (أ)</option>
+                            <option value="سعود محمد الهطالي">المحدوث خلف بالاخير</option>
+                        </optgroup>
+                        <optgroup label="🚌 النقلة الثانية (المسائية)">
+                            <option value="ثاني سالم علي الهطالي">حي الامجاد (ثانية)</option>
+                            <option value="مرهون حارب حميد الهطالي">حي الامجاد (ثانية-2)</option>
+                            <option value="عبدالعزيز مرهون حارب الهطالي">حي الامجاد (ثانية-3)</option>
+                            <option value="سعيد خميس طالب الغلابي">حي الامجاد - محطة الماء (ثانية)</option>
+                            <option value="احمد بن هلال بن زاهر الخروصي">السلان</option>
+                            <option value="محمد بن حمود بن غالب الريامي">الغرب الجديدة - الغرب القديمة</option>
+                            <option value="سالم بن محمد سعيد البحري">المحدوث (ثانية)</option>
+                            <option value="محمد بن حمد بن خلفان بن غضيب الهطالي">الوليجاء - طوي السيح</option>
+                            <option value="خليفه الهطالي">المحدوث - الصناعية - الولجاء</option>
+                            <option value="سعود محمد الهطالي">المحدوث (ثانية-2)</option>
+                        </optgroup>
+                    </select>
+
+                    <div class="bus-info-box">
+                        <label>السائق المسؤول:</label>
+                        <div id="driverNameDisplay" class="driver-name-display">---</div>
+                    </div>
+                    
+                    <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+                    
+                    <div class="panel-title"><i class="fa-solid fa-user-gear"></i> سائقي الحافلات</div>
+                    <select id="employeeSelect" onchange="refreshUI()"></select>
+                    <div id="profileContainer"></div>
+                </div>
+            </aside>
+
+            <main>
+                <div class="content-panel">
+                    <div class="panel-title"><i class="fa-solid fa-pen-to-square"></i> تسجيل إجراء إداري جديد</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-section">
+                            <p style="font-weight: bold; color: var(--admin-blue);">✅ مهمة منجزة</p>
+                            <input type="text" id="taskInput" placeholder="ما هي المهمة التي تمت؟">
+                            <input type="date" id="dateInput">
+                            <button class="btn btn-primary" id="btnTask" onclick="submitData('TASK')">حفظ وإرسال للمدير <i class="fa-brands fa-whatsapp"></i></button>
+                        </div>
+                        <div class="form-section" style="border-right: 4px solid var(--danger-red);">
+                            <p style="font-weight: bold; color: var(--danger-red);">⚠️ موقف مستجد</p>
+                            <input type="text" id="statusInput" placeholder="وصف الموقف...">
+                            <input type="text" id="actionInput" placeholder="الإجراء المتخذ...">
+                            <button class="btn btn-secondary" id="btnNote" onclick="submitData('NOTE')">حفظ وإرسال للمدير <i class="fa-brands fa-whatsapp"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-panel" style="margin-top: 20px;">
+                    <div class="panel-title"><i class="fa-solid fa-list-check"></i> السجل الزمني للأعمال الأخيرة</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <thead>
+                            <tr style="background: var(--admin-dark); color: white;">
+                                <th style="padding: 10px;">التاريخ</th>
+                                <th style="padding: 10px;">الموظف</th>
+                                <th style="padding: 10px;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsBody" style="text-align: center;"></tbody>
+                    </table>
+                </div>
+            </main>
+
+            <aside>
+                <div class="content-panel">
+                    <div class="panel-title"><i class="fa-solid fa-chart-pie"></i> ملخص العمليات</div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; text-align: center;">
+                        <div style="flex:1; background:#f1f5f9; padding:10px; border-radius:8px;">
+                            <b id="taskCounter" style="color:var(--admin-blue); font-size:1.5rem;">0</b><br><small>مهام</small>
+                        </div>
+                        <div style="flex:1; background:#f1f5f9; padding:10px; border-radius:8px;">
+                            <b id="noteCounter" style="color:var(--danger-red); font-size:1.5rem;">0</b><br><small>مواقف</small>
+                        </div>
+                    </div>
+
+                    <div id="qrSection" style="display:none;">
+                        <div class="panel-title" style="color:var(--whatsapp-color); border-bottom-color:var(--whatsapp-color);">
+                            <i class="fa-brands fa-whatsapp"></i> مراسلة الموظف
+                        </div>
+                        <textarea id="customMessage" oninput="updateQRCodeFromText()" placeholder="اكتب ملاحظة للموظف..."></textarea>
+                        <div id="qrcode" style="display:flex; justify-content:center; margin:15px 0;"></div>
+                        <button class="btn btn-success" onclick="sendWhatsAppDirectToEmployee()">إرسال للموظف مباشر <i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxapY5Q3Wx4tHOXLfcvdwh7Zp-D1GV1QzX5EqBx3MtNKHXFsxorF_wNM5WPy-5e_GhW/exec';
+    const managerPhone = "96899348935"; 
+    let database = { employees: [], headers2: [], allTasks: [], allNotes: [] };
+    let currentEmployeePhone = "";
+    let signaturePad;
+
+    // --- الدوال الجديدة لتفعيل النظام بشكل مخفي ---
+    
+    function activateSystem() {
+        document.getElementById('codeModal').style.display = 'block';
+        document.getElementById('secretCodeInput').value = "";
+        document.getElementById('secretCodeInput').focus();
+    }
+
+    function verifySecretCode() {
+        const pass = document.getElementById('secretCodeInput').value;
+        if (pass === "1234") {
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('codeModal').style.display = 'none';
+            
+            const actKey = document.querySelector('.activation-key');
+            actKey.innerHTML = '<i class="fa-solid fa-terminal"></i> تم فك التشفير';
+            actKey.style.background = "#15803d";
+            actKey.style.color = "#fff";
+            actKey.onclick = null; // تعطيل الزر بعد النجاح
+            
+            showToast("✅ تمت المصادقة بنجاح");
+        } else {
+            alert("الشفرة خاطئة! الوصول مرفوض.");
+            document.getElementById('secretCodeInput').value = "";
+        }
+    }
+
+    function closeCodeModal() {
+        document.getElementById('codeModal').style.display = 'none';
+    }
+
+    // إضافة مستمع لزر Enter في حقل الشفرة
+    document.getElementById('secretCodeInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') verifySecretCode();
+    });
+
+    // --- بقية الدوال البرمجية للنظام ---
+
+    function initDashboard() {
+        setInterval(() => { document.getElementById('liveClock').innerText = new Date().toLocaleTimeString('en-GB'); }, 1000);
+        document.getElementById('dateInput').valueAsDate = new Date();
+        signaturePad = new SignaturePad(document.getElementById('signature-pad'));
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.get('approve')) {
+            document.getElementById('mainContent').style.display = 'block'; 
+            openApprovalMode(urlParams.get('approve'), urlParams.get('type'), urlParams.get('emp'), urlParams.get('act'));
+        }
+        fetchRemoteData();
+    }
+
+    function updateDriverInfo() {
+        const select = document.getElementById('transportSelect');
+        const driverDiv = document.getElementById('driverNameDisplay');
+        const driverName = select.value;
+        driverDiv.innerText = driverName || "---";
+    }
+
+    async function fetchRemoteData() {
+        try {
+            const res = await fetch(`${scriptURL}?t=${Date.now()}`);
+            database = await res.json();
+            const select = document.getElementById('employeeSelect');
+            select.innerHTML = '<option value="NONE">-- اختر السائق --</option>' + 
+                database.employees.map(e => `<option value="${e[database.headers2[0]]}">${e[database.headers2[0]]}</option>`).join('');
+            refreshUI();
+        } catch (e) { showToast("⚠️ تعذر جلب البيانات"); }
+    }
+
+    function refreshUI() {
+        const name = document.getElementById('employeeSelect').value;
+        const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const day = days[new Date().getDay()];
+        
+        const todayStaff = database.employees.filter(e => (e["يوم المناوبة"] || e["المناوبة"]) === day);
+        document.getElementById('dutyGrid').innerHTML = todayStaff.map(emp => `
+            <div class="duty-card ${emp[database.headers2[0]] === name ? 'active' : ''}" onclick="selectUser('${emp[database.headers2[0]]}')">
+                <b>${emp[database.headers2[0]]}</b><br>
+                <small>${emp["الهاتف"] || ''}</small>
+            </div>
+        `).join('') || '<p>لا يوجد مناوبين اليوم</p>';
+
+        renderReports(name);
+
+        if (name === "NONE") {
+            document.getElementById('profileContainer').innerHTML = "";
+            document.getElementById('qrSection').style.display = 'none';
+            return;
+        }
+
+        const emp = database.employees.find(e => e[database.headers2[0]] === name);
+        if(emp) {
+            currentEmployeePhone = formatNumber(emp["الهاتف"] || "");
+            document.getElementById('profileContainer').innerHTML = `<div style="margin-top:15px; font-size:0.8rem; line-height:1.8; background:#f8fafc; padding:10px; border-radius:8px;">${database.headers2.map(h => `<b>${h}:</b> ${emp[h] || '-'}<br>`).join('')}</div>`;
+            document.getElementById('qrSection').style.display = 'block';
+            document.getElementById('customMessage').value = `الفاضل/ ${name}، يرجى متابعة التقرير اليومي للأهمية.`;
+            updateQRCodeFromText();
+            document.getElementById('taskCounter').innerText = database.allTasks.filter(t => t.name === name).length;
+            document.getElementById('noteCounter').innerText = database.allNotes.filter(n => n.name === name).length;
+        }
+    }
+
+    function renderReports(nameFilter) {
+        const body = document.getElementById('reportsBody');
+        body.innerHTML = "";
+        let combined = [...(database.allTasks || []), ...(database.allNotes || [])];
+        if(nameFilter !== "NONE") combined = combined.filter(c => c.name === nameFilter);
+        combined.sort((a,b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)).slice(0, 10).forEach(log => {
+            body.innerHTML += `<tr style="border-bottom: 1px solid #eee;">
+                <td style="padding:8px;">${new Date(log.timestamp || log.date).toLocaleDateString('ar-OM')}</td>
+                <td>${log.name}</td>
+                <td style="text-align:right;">${log.task || log.status}</td>
+            </tr>`;
+        });
+    }
+
+    async function submitData(type) {
+        const name = document.getElementById('employeeSelect').value;
+        const btn = type === 'TASK' ? document.getElementById('btnTask') : document.getElementById('btnNote');
+        if (name === "NONE") return showToast("⚠️ اختر موظفاً أولاً");
+        
+        let detail = type === 'TASK' ? document.getElementById('taskInput').value : document.getElementById('statusInput').value;
+        let action = type === 'NOTE' ? document.getElementById('actionInput').value : "";
+        if(!detail) return showToast("⚠️ الحقل فارغ");
+
+        btn.disabled = true;
+        showToast("📤 جاري الأرشفة والتحضير...");
+
+        try {
+            let postData = { name, type, password: "1212" };
+            if(type === 'TASK') { postData.task = detail; postData.date = document.getElementById('dateInput').value; }
+            else { postData.status = detail; postData.action = action; postData.date = new Date().toISOString(); }
+            
+            await fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(postData) });
+
+            const baseUrl = window.location.href.split('?')[0];
+            const approveLink = `${baseUrl}?approve=${encodeURIComponent(detail)}&type=${type}&emp=${encodeURIComponent(name)}&act=${encodeURIComponent(action)}`;
+            
+            const reportMsg = 
+                `*🔔 إشعار إداري رسمي*%0A` +
+                `*مدرسة الشيخ جاعد بن خميس*%0A` +
+                `*━━━━━━━━━━━━━━*%0A%0A` +
+                `*👤 الموظف:* ${name}%0A` +
+                `*📝 الإجراء:* ${type === 'TASK' ? '✅ إنجاز مهمة' : '⚠️ موقف مستجد'}%0A%0A` +
+                `*📋 التفاصيل:*%0A${detail}%0A` +
+                (action ? `%0A*🛠️ الإجراء المتخذ:*%0A${action}%0A` : "") +
+                `%0A*━━━━━━━━━━━━━━*%0A` +
+                `*📍 رابط الاعتماد والطباعة:*%0A${approveLink}%0A%0A` +
+                `_نظام جاعد للإدارة الرقمية 🖥️_`;
+
+            window.open(`https://api.whatsapp.com/send?phone=${formatNumber(managerPhone)}&text=${reportMsg}`, '_blank');
+            showToast("✅ تمت الأرشفة بنجاح");
+            setTimeout(fetchRemoteData, 1500);
+        } catch (e) { showToast("❌ فشل الإرسال"); } finally { btn.disabled = false; }
+    }
+
+    function sendWhatsAppDirectToEmployee() {
+        if(!currentEmployeePhone) return showToast("⚠️ الموظف ليس لديه رقم");
+        const msg = encodeURIComponent(document.getElementById('customMessage').value);
+        window.open(`https://api.whatsapp.com/send?phone=${currentEmployeePhone}&text=${msg}`, '_blank');
+    }
+
+    function formatNumber(num) {
+        let clean = num.toString().replace(/\D/g, '');
+        if (clean.length === 8) clean = '968' + clean;
+        return clean;
+    }
+
+    function updateQRCodeFromText() {
+        const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
+        if (currentEmployeePhone) {
+            new QRCode(qrDiv, { text: `https://wa.me/${currentEmployeePhone}?text=${encodeURIComponent(document.getElementById('customMessage').value)}`, width: 120, height: 120 });
+        }
+    }
+
+    function openApprovalMode(detail, type, emp, act) {
+        document.getElementById('approveInfo').innerText = `طلب اعتماد للموظف: ${emp}`;
+        document.getElementById('printBody').innerHTML = `
+            <div style="border: 2px solid #000; padding: 20px; border-radius: 10px;">
+                <p><b>👤 الموظف:</b> ${emp}</p>
+                <p><b>📌 النوع:</b> ${type === 'TASK' ? 'إنجاز مهمة' : 'موقف مستجد'}</p>
+                <p><b>📝 التفاصيل:</b> ${detail}</p>
+                ${act ? `<p><b>🛠️ الإجراء:</b> ${act}</p>` : ''}
+            </div>`;
+        document.getElementById('signatureModal').style.display = 'block';
+    }
+
+    function confirmSignature() {
+        if (signaturePad.isEmpty()) return alert("يرجى التوقيع أولاً");
+        document.getElementById('sigImg').src = signaturePad.toDataURL();
+        document.getElementById('printDate').innerText = `تحريراً في: ${new Date().toLocaleString('ar-OM')}`;
+        document.getElementById('signatureModal').style.display = 'none';
+        setTimeout(() => { window.print(); signaturePad.clear(); }, 800);
+    }
+
+    function closeSignature() { document.getElementById('signatureModal').style.display = 'none'; }
+    function selectUser(n) { document.getElementById('employeeSelect').value = n; refreshUI(); }
+    function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display='none', 3000); }
+</script>
+</body>
+</html>

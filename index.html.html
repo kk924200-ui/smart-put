@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>النظام الإداري الموحد | مدرسة الشيخ جاعد</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        
+        body { background-color: #0f172a; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+
+        /* شريط التنقل العلوي */
+        .tab-bar {
+            display: flex;
+            background: #1e293b;
+            padding: 10px 10px 0 10px;
+            gap: 5px;
+            border-bottom: 2px solid #3b82f6;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 12px 25px;
+            border: none;
+            background: #334155;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 10px 10px 0 0;
+            font-weight: bold;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .tab-btn i { font-size: 1.1rem; }
+
+        /* الألوان الخاصة بكل تبويب عند التفعيل */
+        .tab-btn.active[onclick*="page12"] { background: #8b5cf6; color: white; }
+        .tab-btn.active[onclick*="page40"] { background: #3b82f6; color: white; }
+
+        .tab-btn:hover:not(.active) {
+            background: #475569;
+            color: #f1f5f9;
+        }
+
+        /* حاوية المحتوى */
+        .content-area {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            background: #f8fafc;
+        }
+
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        iframe.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('page12', this)">
+            <i class="fa-solid fa-fingerprint"></i> نظام البصمة (12)
+        </button>
+
+        <button class="tab-btn" onclick="switchTab('page40', this)">
+            <i class="fa-solid fa-gauge-high"></i> النظام الإداري (40)
+        </button>
+    </div>
+
+    <div class="content-area">
+        <iframe id="page12" src="12.html" class="active"></iframe>
+        <iframe id="page40" src="40.html"></iframe>
+    </div>
+
+    <script>
+        function switchTab(pageId, btn) {
+            // 1. إخفاء جميع الإطارات
+            document.querySelectorAll('iframe').forEach(frame => {
+                frame.classList.remove('active');
+            });
+
+            // 2. إزالة حالة النشاط من الأزرار
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+
+            // 3. إظهار الصفحة المختارة وتفعيل زرها
+            const targetFrame = document.getElementById(pageId);
+            if (targetFrame) {
+                targetFrame.classList.add('active');
+                btn.classList.add('active');
+            }
+        }
+    </script>
+
+</body>
+</html>

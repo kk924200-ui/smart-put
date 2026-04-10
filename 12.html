@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام مدرسة الشيخ جاعد المتكامل</title>
+    
+    <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --primary: #0f172a; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --bg: #f1f5f9; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body { background: var(--bg); color: var(--primary); padding: 10px; min-height: 100vh; overflow-x: hidden; }
+        
+        /* شريط التنقل */
+        .nav-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; background: white; padding: 10px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .nav-btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #e2e8f0; color: #475569; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+        .nav-btn.active { background: var(--accent); color: white; }
+
+        .page { display: none; animation: fadeIn 0.4s ease-out; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* البطاقات */
+        .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
+        .card-header { font-weight: 900; font-size: 1.3rem; margin-bottom: 15px; text-align: center; border-bottom: 2px solid var(--bg); padding-bottom: 10px; color: var(--primary); }
+
+        /* واجهة البصمة */
+        #status-indicator { font-size: 0.85rem; padding: 10px; border-radius: 12px; margin-bottom: 15px; background: #e2e8f0; font-weight: bold; text-align: center; transition: 0.3s; }
+        .status-ok { background: #dcfce7 !important; color: #166534; }
+        .mode-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .btn-mode { padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; transition: 0.3s; font-size: 1.1rem; }
+        .btn-in.active { background: var(--success); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .btn-out.active { background: var(--danger); color: white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+        #reader { width: 100%; border-radius: 15px; overflow: hidden; border: 3px solid var(--accent); margin-bottom: 15px; display: none; background: #000; }
+        .btn-activate { width: 100%; background: var(--accent); color: white; padding: 20px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; font-size: 1.2rem; }
+
+        /* واجهة التقارير */
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 15px; }
+        .control-input { padding: 10px; border-radius: 10px; border: 1px solid #ddd; font-weight: bold; }
+        .table-container { overflow-x: auto; border-radius: 10px; background: #fff; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 600px; }
+        th { background: var(--primary); color: white; padding: 15px 10px; text-align: right; position: sticky; top: 0; }
+        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; }
+        .badge { padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
+        .in-badge { background: #dcfce7; color: #166534; }
+        .out-badge { background: #fee2e2; color: #991b1b; }
+        .date-badge { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+        /* أدوات المساعدة */
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 12px; color: white; font-weight: bold; display: none; z-index: 10000; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+    <div class="nav-tabs">
+        <button class="nav-btn active" onclick="showPage('attendancePage', this)">
+            <i class="fa-solid fa-qrcode"></i> البصمة
+        </button>
+        <button class="nav-btn" onclick="showPage('reportsPage', this)">
+            <i class="fa-solid fa-table-list"></i> التقارير اليومية
+        </button>
+    </div>
+
+    <div id="attendancePage" class="page active">
+        <div class="card">
+            <div class="card-header">بصمة QR الذكية</div>
+            <div id="status-indicator">جاري التحقق من الموقع...</div>
+            <div class="mode-toggle">
+                <button id="inBtn" class="btn-mode btn-in active" onclick="setMode('حضور')">تسجيل حضور</button>
+                <button id="outBtn" class="btn-mode btn-out" onclick="setMode('انصراف')">تسجيل انصراف</button>
+            </div>
+            <button id="startBtn" class="btn-activate" onclick="activateSystem()">
+                <i class="fa-solid fa-camera"></i> تشغيل الكاميرا
+            </button>
+            <div id="reader"></div>
+            <div id="lastLog" style="margin-top:15px; font-size:0.95rem; text-align:center; color:var(--accent); font-weight:bold;"></div>
+        </div>
+    </div>
+
+    <div id="reportsPage" class="page">
+        <div class="card">
+            <div class="card-header">سجل الحضور والغياب</div>
+            <div class="controls">
+                <input type="date" id="dateFilter" class="control-input" onchange="fetchReports()">
+                <button onclick="exportToExcel()" style="background:var(--success); color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">
+                    <i class="fa-solid fa-file-excel"></i> إكسيل
+                </button>
+            </div>
+            <div class="table-container">
+                <table id="reportsTable">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الموظف</th>
+                            <th>الحضور</th>
+                            <th>الانصراف</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsBody">
+                        <tr><td colspan="5" style="text-align:center; padding:30px; color:#64748b;">اختر التاريخ لعرض البيانات</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading"><i class="fa-solid fa-spinner fa-spin fa-3x" style="color:var(--accent);"></i><p style="margin-top:10px; font-weight:bold;">جاري المعالجة...</p></div>
+    <div id="toast"></div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhT4x1nETlgOYyatXpti_qWJx9btJrf6mHraJEleWiwJQTSE7CIxlWQZKUC34nd4lx/exec";
+    let currentMode = "حضور";
+    let globalCoords = null;
+    let reportsCache = {}; 
+
+    window.onload = () => {
+        const today = new Date().toLocaleDateString('en-CA');
+        document.getElementById('dateFilter').value = today;
+        checkLocation();
+    };
+
+    function checkLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                globalCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                const ind = document.getElementById('status-indicator');
+                ind.innerText = "✅ الموقع نشط - جاهز للمسح";
+                ind.className = "status-ok";
+            }, err => {
+                document.getElementById('status-indicator').innerText = "⚠️ يرجى تفعيل الموقع لضمان الدقة";
+            }, {enableHighAccuracy: true});
+        }
+    }
+
+    function showPage(pageId, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        btn.classList.add('active');
+        
+        if(pageId === 'reportsPage') {
+            fetchReports();
+        }
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        document.getElementById('inBtn').classList.toggle('active', mode === 'حضور');
+        document.getElementById('outBtn').classList.toggle('active', mode === 'انصراف');
+    }
+
+    async function activateSystem() {
+        document.getElementById('reader').style.display = "block";
+        document.getElementById('startBtn').style.display = "none";
+        
+        const html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 25, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start({ facingMode: "environment" }, config, (text) => {
+            sendAttendance(text);
+            html5QrCode.pause(true);
+            setTimeout(() => html5QrCode.resume(), 5000); 
+        }).catch(err => {
+            showToast("❌ تعذر فتح الكاميرا", "#ef4444");
+            document.getElementById('startBtn').style.display = "block";
+        });
+    }
+
+    async function sendAttendance(name) {
+        document.getElementById('loading').style.display = "flex";
+        const now = new Date();
+        const today = now.toLocaleDateString('en-CA');
+        const timeStr = now.toLocaleTimeString('ar-OM', {hour12: true, hour: '2-digit', minute:'2-digit'});
+        
+        const params = new URLSearchParams({
+            name: name, action: currentMode, date: today, time: timeStr,
+            coords: globalCoords ? `${globalCoords.lat},${globalCoords.lng}` : "بدون",
+            accuracy: "جهاز المسح"
+        });
+
+        try {
+            updateLocalUI(name, currentMode, timeStr, today);
+            await fetch(`${SCRIPT_URL}?${params.toString()}`, { method: 'GET', mode: 'no-cors' });
+            showToast(`✅ تم تسجيل ${currentMode}: ${name}`, "#10b981");
+            document.getElementById('lastLog').innerHTML = `آخر بصمة: ${name} (${currentMode} - ${timeStr})`;
+        } catch(e) {
+            showToast("❌ فشل في الاتصال بالسيرفر", "#ef4444");
+        }
+        document.getElementById('loading').style.display = "none";
+    }
+
+    function updateLocalUI(name, mode, time, date) {
+        if (!reportsCache[date]) reportsCache[date] = [];
+        let emp = reportsCache[date].find(r => r.name === name);
+        
+        if (emp) {
+            if (mode === "حضور") emp.checkIn = time; else emp.checkOut = time;
+        } else {
+            reportsCache[date].unshift({ 
+                date: date, // إضافة التاريخ للكاش
+                name: name, 
+                checkIn: mode==="حضور"?time:"---", 
+                checkOut: mode==="انصراف"?time:"---", 
+                status: "محدث" 
+            });
+        }
+        
+        if (document.getElementById('dateFilter').value === date) renderTable(reportsCache[date]);
+    }
+
+    function fetchReports() {
+        const date = document.getElementById('dateFilter').value;
+        if(!date) return;
+        
+        if(reportsCache[date]) {
+            renderTable(reportsCache[date]);
+        }
+
+        if(typeof google !== 'undefined' && google.script) {
+            document.getElementById('loading').style.display = "flex";
+            google.script.run.withSuccessHandler(data => {
+                // التأكد من أن كل عنصر بيانات يحتوي على التاريخ للعرض
+                const dataWithDate = data.map(item => ({...item, date: date}));
+                reportsCache[date] = dataWithDate;
+                renderTable(dataWithDate);
+                document.getElementById('loading').style.display = "none";
+            }).getReportsData(date);
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('reportsBody');
+        const currentDate = document.getElementById('dateFilter').value;
+
+        if(!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;">⚠️ لا توجد سجلات لهذا اليوم</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = data.map(r => `
+            <tr>
+                <td><span class="badge date-badge">${r.date || currentDate}</span></td>
+                <td><strong>${r.name}</strong></td>
+                <td><span class="badge in-badge">${r.checkIn}</span></td>
+                <td><span class="badge out-badge">${r.checkOut}</span></td>
+                <td><small>${r.status}</small></td>
+            </tr>
+        `).join('');
+    }
+
+    function exportToExcel() {
+        const date = document.getElementById('dateFilter').value;
+        const wb = XLSX.utils.table_to_book(document.getElementById("reportsTable"));
+        XLSX.writeFile(wb, `سجل_حضور_${date}.xlsx`);
+    }
+
+    function showToast(m, color) {
+        const t = document.getElementById('toast');
+        t.innerText = m; t.style.background = color; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 3500);
+    }
+</script>
+
+</body>
+</html>
